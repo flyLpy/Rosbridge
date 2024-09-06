@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>hopoai</string>
+   <string>HopoNav v1.0</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout"/>
@@ -27,7 +27,7 @@
    </property>
    <widget class="QMenu" name="menuView">
     <property name="title">
-     <string>hopo</string>
+     <string>菜单</string>
     </property>
    </widget>
    <addaction name="menuView"/>

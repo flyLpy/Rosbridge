@@ -1,28 +1,4 @@
-/*
- * @Author: chengyang chengyangkj@outlook.com
- * @Date: 2023-03-30 15:38:12
- * @LastEditors: chengyangkj chengyangkj@qq.com
- * @LastEditTime: 2023-10-10 15:23:33
- * @FilePath: ////include/map/occupancy_map.h
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置
- * 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- * 图元坐标系:
- * ++++++x
- * +
- * +
- * y
- * 栅格地图坐标系:
- * +++++++y
- * +
- * +
- * x
- * 世界坐标系:
- * y
- * +
- * +
- * ++++++x
- *
- */
+
 #ifndef OCCUPANCY_MAP_H
 #define OCCUPANCY_MAP_H
 #include <Eigen/Dense>

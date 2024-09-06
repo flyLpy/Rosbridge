@@ -1,11 +1,10 @@
-#include "rosbridgeclient.h"
+#include "connect/rosbridgeclient.h"
 #include <QJsonArray>
 #include <QDebug>
-ROSBridgeClient::ROSBridgeClient(QObject* parent)
+ROSBridgeClient::ROSBridgeClient(QObject* parent,QString a,QString b)
     : QObject(parent) {
-    connect(&webSocket, &QWebSocket::connected, this, &ROSBridgeClient::onConnected);
     connect(&webSocket, &QWebSocket::textMessageReceived, this, &ROSBridgeClient::onTextMessageReceived);//接收到消息执行函数
-    webSocket.open(QUrl("ws://192.168.8.62:9090")); // 修改为远程 IP 地址
+    webSocket.open(QUrl("ws://" + a + ":" + b));
 }
 
 void ROSBridgeClient::getTopicList() {
@@ -42,7 +41,6 @@ void ROSBridgeClient::battery(const QString& topic, const QString& type) {
     json["op"] = "subscribe";
     json["topic"] = topic;
     json["type"] = type;
-
     webSocket.sendTextMessage(QJsonDocument(json).toJson(QJsonDocument::Compact));
     batteryTopic = topic;
 }
@@ -55,12 +53,11 @@ void ROSBridgeClient::receive_odom(const QString &topic, const QString &type){
     webSocket.sendTextMessage(QJsonDocument(json).toJson(QJsonDocument::Compact));
     odomTopic = topic;
 }
-void ROSBridgeClient::map_topic(const QString &topic, const QString &type){
+void ROSBridgeClient::receive_map(const QString &topic, const QString &type){
     QJsonObject json;
     json["op"] = "subscribe";
     json["topic"] = topic;
     json["type"] = type;
-
     webSocket.sendTextMessage(QJsonDocument(json).toJson(QJsonDocument::Compact));
     mapTopic = topic;
 }
@@ -81,10 +78,10 @@ void ROSBridgeClient::onTextMessageReceived(const QString& message) {
         }else if(topic ==odomTopic){
             emit odommessage(message);
         }else if(topic ==mapTopic){
-            emit mapmassage(message);
+            emit mapmessage(message);
         }
     }
 }
-void ROSBridgeClient::sendspeed(QString message){
+void ROSBridgeClient::sendmessage(QString message){
     webSocket.sendTextMessage(message);
 }

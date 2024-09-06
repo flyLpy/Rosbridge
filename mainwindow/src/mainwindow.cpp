@@ -148,20 +148,6 @@ void MainWindow::setupUi() {
   horizontalLayout_tools->addItem(
       new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Minimum));
   center_layout->addLayout(horizontalLayout_tools);
-  ///////////////////////////////////////////////////////////////////服务器连接
-  QHBoxLayout *server_layout=new QHBoxLayout();
-  QPushButton *server_start= new QPushButton("建立连接");
-  QPushButton *server_close= new QPushButton("断开连接");
-  QPushButton *server_camera=new QPushButton("摄像头");
-  QSpacerItem *spacer_right = new QSpacerItem(100, 0, QSizePolicy::Fixed, QSizePolicy::Minimum);
-  server_layout->addWidget(server_start);
-  server_layout->addWidget(server_close);
-  server_layout->addWidget(server_camera);
-  server_layout->addItem(spacer_right);
-  horizontalLayout_tools->addLayout(server_layout);
-  connect(server_start,&QPushButton::clicked,this,&MainWindow::startserver);
-  connect(server_close,&QPushButton::clicked,this,&MainWindow::closeserver);
-  connect(server_camera,&QPushButton::clicked,this,&MainWindow::startcamera);
   ///////////////////////////////////////////////////////////////////电池电量
   battery_bar_ = new QProgressBar();
   battery_bar_->setObjectName(QString::fromUtf8("battery_bar_"));
@@ -253,58 +239,7 @@ void MainWindow::setupUi() {
                              QSize(), QIcon::Normal, QIcon::Off);
   add_point_btn->setIcon(add_point_btn_icon);
   layout_tools_edit_map->addWidget(add_point_btn);
-
-  QToolButton *add_topology_path_btn = new QToolButton();
-  add_topology_path_btn->setStyleSheet(
-      "QToolButton {"
-      "   border: none;"
-      "   background-color: transparent;"
-      "}"
-      "QToolButton:pressed {"
-      "   background-color: lightblue;"
-      "}");
-  add_topology_path_btn->setToolTip("连接工位点");
-  add_topology_path_btn->setCursor(Qt::PointingHandCursor);
-  add_topology_path_btn->setIconSize(QSize(32, 32));
-
-  QIcon add_topology_path_btn_icon;
-  add_topology_path_btn_icon.addFile(QString::fromUtf8(":/images/topo_link_btn.svg"),
-                                     QSize(), QIcon::Normal, QIcon::Off);
-  add_topology_path_btn->setIcon(add_topology_path_btn_icon);
-  layout_tools_edit_map->addWidget(add_topology_path_btn);
-  //TODO 拓扑点连接
-  add_topology_path_btn->setEnabled(false);
-  //添加区域按钮
-  QToolButton *add_region_btn = new QToolButton();
-  add_region_btn->setStyleSheet(
-      "QToolButton {"
-      "   border: none;"
-      "   background-color: transparent;"
-      "}"
-      "QToolButton:pressed {"
-      "   background-color: lightblue;"
-      "}");
-  add_region_btn->setToolTip("添加区域");
-  add_region_btn->setCursor(Qt::PointingHandCursor);
-  add_region_btn->setIconSize(QSize(32, 32));
-
-  QIcon add_region_btn_icon;
-  add_region_btn_icon.addFile(QString::fromUtf8(":/images/region_btn.svg"),
-                              QSize(), QIcon::Normal, QIcon::Off);
-  add_region_btn->setIcon(add_region_btn_icon);
-  add_region_btn->setEnabled(false);
-  layout_tools_edit_map->addWidget(add_region_btn);
-
-  //分隔
-  QFrame *separator = new QFrame();
-  separator->setFrameShape(QFrame::HLine);
-  separator->setFrameShadow(QFrame::Sunken);
-
-  // 将分割符号添加到布局中
-  layout_tools_edit_map->addWidget(separator);
-
   //橡皮擦按钮
-
   QToolButton *erase_btn = new QToolButton();
   erase_btn->setStyleSheet(
       "QToolButton {"
@@ -447,16 +382,17 @@ void MainWindow::setupUi() {
   horizontalLayout_13->addWidget(nav_goal_table_view_);
   task_list_widget->setLayout(horizontalLayout_13);
   ads::CDockWidget *nav_goal_list_dock_widget = new ads::CDockWidget("导航任务栏");
-  QPushButton *btn_add_one_goal = new QPushButton("Add Point");
+
+  QPushButton *btn_add_one_goal = new QPushButton("添加点");
   QHBoxLayout *horizontalLayout_15 = new QHBoxLayout();
-  QPushButton *btn_start_task_chain = new QPushButton("Start Task Chain");
-  QCheckBox *loop_task_checkbox = new QCheckBox("Loop Task");
+  QPushButton *btn_start_task_chain = new QPushButton("开始任务链");
+  QCheckBox *loop_task_checkbox = new QCheckBox("循环任务");
   QHBoxLayout *horizontalLayout_14 = new QHBoxLayout();
   horizontalLayout_15->addWidget(btn_add_one_goal);
   horizontalLayout_14->addWidget(btn_start_task_chain);
   horizontalLayout_14->addWidget(loop_task_checkbox);
-  QPushButton *btn_load_task_chain = new QPushButton("Load Task Chain");
-  QPushButton *btn_save_task_chain = new QPushButton("Save Task Chain");
+  QPushButton *btn_load_task_chain = new QPushButton("加载任务链");
+  QPushButton *btn_save_task_chain = new QPushButton("保存任务链");
   QHBoxLayout *horizontalLayout_16 = new QHBoxLayout();
   horizontalLayout_16->addWidget(btn_load_task_chain);
   horizontalLayout_16->addWidget(btn_save_task_chain);
@@ -471,9 +407,62 @@ void MainWindow::setupUi() {
   nav_goal_list_dock_widget->setMaximumSize(480, 9999);
   dock_manager_->addDockWidget(ads::DockWidgetArea::RightDockWidgetArea,
                                nav_goal_list_dock_widget, center_docker_area_);
-  nav_goal_list_dock_widget->toggleView(false);
+  nav_goal_list_dock_widget->toggleView(true);
   // nav_goal_list_dock_widget->toggleView(false);
   ui->menuView->addAction(nav_goal_list_dock_widget->toggleViewAction());
+  //连接信号和槽
+  //发布位置信息
+  //connect(nav_goal_table_view_, &NavGoalTableView::signalSendNavGoal, [this](const RobotPose &pose) {
+    //   PubNavGoal(pose);
+   //});
+  connect(nav_goal_table_view_, &NavGoalTableView::signalSendNavGoal,
+          this, [this](const RobotPose &pose) {
+              // 使用 Qt::QueuedConnection 来确保 PubNavGoal(pose) 在主线程中执行
+              QMetaObject::invokeMethod(this, [this, pose]() {
+                  PubNavGoal(pose);
+              }, Qt::QueuedConnection);
+          });
+
+  //加载任务链
+  connect(btn_load_task_chain, &QPushButton::clicked, [this]() {
+       QString fileName = QFileDialog::getOpenFileName(nullptr, "Open JSON file", "", "JSON files (*.json)");
+       if (!fileName.isEmpty()) {
+           qDebug() << "Selected file:" << fileName;
+           nav_goal_table_view_->LoadTaskChain(fileName.toStdString());
+       }
+   });
+  //保存任务链
+  connect(btn_save_task_chain, &QPushButton::clicked, [this]() {
+        QString fileName = QFileDialog::getSaveFileName(nullptr, "Save JSON file", "", "JSON files (*.json)");
+        if (!fileName.isEmpty()) {
+            qDebug() << "Selected file:" << fileName;
+            if (!fileName.endsWith(".json")) {
+                fileName += ".json";
+            }
+            nav_goal_table_view_->SaveTaskChain(fileName.toStdString());
+        }
+    });
+  //添加点
+  connect(btn_add_one_goal, &QPushButton::clicked, [this, nav_goal_list_dock_widget]() {
+        nav_goal_table_view_->AddItem();
+    });
+  //开始任务链
+  connect(btn_start_task_chain, &QPushButton::clicked, [this, btn_start_task_chain, loop_task_checkbox]() {
+      if (btn_start_task_chain->text() == "Start Task Chain") {
+          btn_start_task_chain->setText("Stop Task Chain");
+          nav_goal_table_view_->StartTaskChain(loop_task_checkbox->isChecked());
+      } else {
+          btn_start_task_chain->setText("Start Task Chain");
+          nav_goal_table_view_->StopTaskChain();
+      }
+  });
+  connect(nav_goal_table_view_, &NavGoalTableView::signalTaskFinish, [this, btn_start_task_chain]() {
+        LOG_INFO("task finish!");
+        btn_start_task_chain->setText("Start Task Chain");
+    });
+  connect(display_manager_, SIGNAL(signalTopologyMapUpdate(const TopologyMap &)), nav_goal_table_view_, SLOT(UpdateTopologyMap(const TopologyMap &)));
+
+  connect(display_manager_, SIGNAL(signalCurrentSelectPointChanged(const TopologyMap::PointInfo &)), nav_goal_table_view_, SLOT(UpdateSelectPoint(const TopologyMap::PointInfo &)));
   /////////////////////////////////////////////////////////////////////////////////////////摄像头
       ads::CDockWidget *dock_widget = new ads::CDockWidget("摄像头");
       QWidget *imageWidget = new QWidget();
@@ -491,7 +480,42 @@ void MainWindow::setupUi() {
                                    center_docker_area_);
       dock_widget->toggleView(true);
       ui->menuView->addAction(dock_widget->toggleViewAction());
+
+  /////////////////////////////////////////////////////////////////////////////////////////////注册
+      ads::CDockWidget* sensorDockWidget1 = new ads::CDockWidget("注册");
+      QWidget* sensorWidget1 = new QWidget();
+      sensor = new Sensor(sensorWidget1);
+      sensorDockWidget1->setWidget(sensorWidget1);
+      auto sensorArea = dock_manager_->addDockWidget(
+          ads::DockWidgetArea::RightDockWidgetArea,
+          sensorDockWidget1,
+          center_docker_area_
+      );
+      ui->menuView->addAction(sensorDockWidget1->toggleViewAction());
+      ///////////////////////////////////////////////////////////////////服务器连接
+      connect(sensor,&Sensor::websocketConnected,this,&MainWindow::startserver);
+      connect(sensor,&Sensor::websocketClosed,this,&MainWindow::closeserver);
+      connect(sensor,&Sensor::opencamera,this,&MainWindow::startcamera);
+      connect(sensor,&Sensor::openmap,this,&MainWindow::submap);
+      connect(sensor,&Sensor::openmap,this,&MainWindow::sub_lidar);
+      connect(sensor,&Sensor::openmap,this,&MainWindow::sub_GlobalCostMap);
+      connect(sensor,&Sensor::openmap,this,&MainWindow::sub_RobotPose);
   /////////////////////////////////////////////////////////////////////////////////////////////槽连接
+      connect(display_manager_, &Display::DisplayManager::signalPub2DPose,
+                [this](const RobotPose &pose) {
+                  PubRelocPose(pose);
+                });
+     //   connect(display_manager_, &Display::DisplayManager::signalPub2DGoal,
+            //    [this](const RobotPose &pose) {
+               //   PubNavGoal(pose);
+             //  });
+        connect(display_manager_, &Display::DisplayManager::signalPub2DGoal,
+                this, [this](const RobotPose &pose) {
+                    // 使用 QMetaObject::invokeMethod 确保 PubNavGoal 在主线程中执行
+                    QMetaObject::invokeMethod(this, [this, pose]() {
+                        PubNavGoal(pose);
+                    }, Qt::QueuedConnection);
+                });
   //重定位
       connect(reloc_btn, &QToolButton::clicked,
                 [this]() { display_manager_->StartReloc(); });
@@ -537,7 +561,24 @@ void MainWindow::setupUi() {
      LOG_INFO("取消保存地图");
    }
  });
-
+   connect(add_point_btn, &QToolButton::clicked, [this]() {
+      display_manager_->SetEditMapMode(Display::MapEditMode::kAddPoint);
+    });
+    connect(normal_cursor_btn, &QToolButton::clicked, [this]() { display_manager_->SetEditMapMode(Display::MapEditMode::kNormal); });
+    connect(erase_btn, &QToolButton::clicked, [this]() { display_manager_->SetEditMapMode(Display::MapEditMode::kErase); });
+    connect(draw_line_btn, &QToolButton::clicked, [this]() { display_manager_->SetEditMapMode(Display::MapEditMode::kDrawLine); });
+    connect(draw_pen_btn, &QToolButton::clicked, [this]() { display_manager_->SetEditMapMode(Display::MapEditMode::kDrawWithPen); });
+    connect(display_manager_->GetDisplay(DISPLAY_MAP),
+             SIGNAL(signalCursorPose(QPointF)), this,
+             SLOT(signalCursorPose(QPointF)));
+}
+void MainWindow::signalCursorPose(QPointF pos) {
+  basic::Point mapPos =
+      display_manager_->mapPose2Word(basic::Point(pos.x(), pos.y()));
+  label_pos_map_->setText("( x:" + QString::number(mapPos.x).mid(0, 4) +
+                          " y:" + QString::number(mapPos.y).mid(0, 4) + ") ");
+  label_pos_scene_->setText("(x:" + QString::number(pos.x()).mid(0, 4) +
+                            " y:" + QString::number(pos.y()).mid(0, 4) + ")");
 }
 void MainWindow::RestoreState() {
   QSettings settings("state.ini", QSettings::IniFormat);
@@ -564,48 +605,42 @@ void MainWindow::SaveState() {
 }
 //连接服务器
 void MainWindow::startserver(){
-    QString command = "ssh";
-    QStringList args;
-    args << "firefly@192.168.8.62" << "source /opt/ros/humble/setup.bash && export ROS_DOMAIN_ID=62 && ros2 launch rosbridge_server rosbridge_websocket_launch.xml";
-    // 创建QProcess对象
-    process = new QProcess();
-    // 启动SSH命令
-    process->start(command, args);
-    // 获取命令输出
-    QByteArray output = process->readAllStandardOutput();
-    qDebug() << "SSH process output:" << output;
-    // init client
-    rosClient = new ROSBridgeClient(this);
+    QString ipaddress,port;
+    ipaddress = sensor->ipEdit->text();
+    port = sensor->portEdit->text();
+    cameraClient=new CameraBridgeClient(this,ipaddress,port);
+    rosClient = new ROSBridgeClient(this,ipaddress,port);
+    mapclient=new mapBridge(this,ipaddress,port);
     ///////////////////////////////////////////////////////////////////////////////////////////////连接服务器就自动订阅话题
-    connect(rosClient,&ROSBridgeClient::serverconnected,this,&MainWindow::odom);
-    connect(rosClient,&ROSBridgeClient::serverconnected,this,&MainWindow::battery);
+    odom();
+    battery();
 }
 //断开服务器
 void MainWindow::closeserver() {
-    if (process) {  // 检查进程对象是否存在
-        // 结束进程
-        process->terminate();  // 请求进程终止
-        if (!process->waitForFinished(3000)) {  // 等待最多 3 秒
-            process->kill();  // 强制终止进程
-        }
-        delete process;  // 释放内存
-        process = nullptr;  // 清空指针
-    }
-
     if (rosClient) {
         delete rosClient;  // 释放 ROSBridgeClient 对象
         rosClient = nullptr;  // 清空指针
     }
-
-    qDebug() << "Server process closed.";
+    if (cameraClient) {
+        delete cameraClient;
+        cameraClient = nullptr;
+    }
+    if(sensor){
+        delete sensor;
+        sensor=nullptr;
+    }
+    if(mapclient){
+        delete mapclient;
+        mapclient=nullptr;
+    }
+    QMessageBox::information(this,"Notification","Server process closed");
 }
 void MainWindow::odom(){
     QString topic="/odom";
     QString type="nav_msgs/msg/Odometry";
-    rosClient->receive_odom(topic,type);
-    connect(rosClient, &ROSBridgeClient::odommessage, this, &MainWindow::updateOdomInfo);
+    sensor->receive_odom(topic,type);
+    connect(sensor, &Sensor::odommessage, this, &MainWindow::updateOdomInfo);
 }
-
 //显示速度
 void MainWindow::updateOdomInfo(QString message) {
     QJsonDocument jsonDoc = QJsonDocument::fromJson(message.toUtf8());
@@ -632,11 +667,12 @@ void MainWindow::updateOdomInfo(QString message) {
 void MainWindow::battery(){
     QString topic = "/battery";
     QString type = "sensor_msgs/msg/BatteryState";
-    rosClient->battery(topic, type);
-    connect(rosClient, &ROSBridgeClient::batterymessage, this, &MainWindow::show_battery);
+    sensor->receive_battery(topic, type);
+    connect(sensor, &Sensor::batterymessage, this, &MainWindow::show_battery);
 }
 //电池电量显示
 void MainWindow::show_battery(QString message){
+     sensor->setpicture1();
     double batteryVoltage,batteryPercentage;
     QJsonDocument jsonDoc = QJsonDocument::fromJson(message.toUtf8());
         if (!jsonDoc.isNull() && jsonDoc.isObject()) {
@@ -676,18 +712,17 @@ void MainWindow::update_speed(const RobotSpeed &speed){
        // 将 JSON 对象转换为字符串
        QJsonDocument doc(rosbridge_msg);
        QString json_str = doc.toJson(QJsonDocument::Compact);
-       rosClient->sendspeed(json_str);
+       sensor->sendmessage(json_str);
 }
 void MainWindow::startcamera(){
     QString topic = "/camera/color/image_raw/compressed";
     QString type = "sensor_msgs/msg/CompressedImage";
-    rosClient->subscribecameraTopic(topic, type);
-    connect(rosClient, &ROSBridgeClient::cameramessageReceived, this, &MainWindow::show_msgs);
-    //cameramessageReceived是收到消息传到这个函数继续执行，如果有不同的topic可以根据topic的名字判断分发到那里
+    cameraClient->subscribecameraTopic(topic, type);
+    connect(cameraClient, &CameraBridgeClient::cameramessageReceived, this, &MainWindow::show_msgs);
 }
 //显示摄像头的实现
 void MainWindow::show_msgs(QString message){
-
+    sensor->setpicture3();
     QJsonDocument jsonDoc = QJsonDocument::fromJson(message.toUtf8());
     QJsonObject jsonObj = jsonDoc.object();
 
@@ -708,5 +743,258 @@ void MainWindow::show_msgs(QString message){
         imagelabel->setPixmap(QPixmap::fromImage(image));
     } else {
         qWarning() << "解码压缩图像失败。";
+    }
+}
+void MainWindow::PubNavGoal(const RobotPose &pose) {
+    double x = pose.x;
+    double y = pose.y;
+    double theta = pose.theta;
+    // 创建 JSON 对象
+    QJsonObject geo_pose;
+    // 设置 header
+    QJsonObject header;
+    header["frame_id"] = "map";
+    // 使用 std::chrono 获取的时间戳
+    auto now = std::chrono::steady_clock::now();
+    auto time_since_epoch = now.time_since_epoch();
+    auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(time_since_epoch).count();
+    header["stamp"] = QString::number(nanoseconds);
+
+    QJsonObject position;
+    position["x"] = x;
+    position["y"] = y;
+    position["z"] = 0;
+    // 使用 Eigen 计算四元数
+    Eigen::Quaterniond quaternion = Eigen::Quaterniond::Identity();
+    quaternion = Eigen::AngleAxisd(theta, Eigen::Vector3d::UnitZ()) * quaternion;
+
+    QJsonObject orientation;
+    orientation["x"] = quaternion.x();
+    orientation["y"] = quaternion.y();
+    orientation["z"] = quaternion.z();
+    orientation["w"] = quaternion.w();
+
+    // 将各部分添加到 geo_pose 对象中
+    QJsonObject poseObject;
+    poseObject["position"] = position;
+    poseObject["orientation"] = orientation;
+    geo_pose["header"] = header;
+    geo_pose["pose"] = poseObject;
+
+
+    QJsonObject rosbridge_msg;
+        rosbridge_msg["op"] = "publish";
+        rosbridge_msg["topic"] = "/goal_pose"; // 替换为实际的 ROS 话题名
+        rosbridge_msg["msg"] = geo_pose;
+    qDebug()<<geo_pose<<"----------------------------------------------";
+        // 将 JSON 对象转换为 QString
+        QJsonDocument doc(rosbridge_msg);
+        QString rosbridgeMessage = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+      for(int i=0;i<100;i++)
+    rosClient->sendmessage(rosbridgeMessage);
+}
+void MainWindow::handleNavGoal(const RobotPose &pose){
+    PubNavGoal(pose);
+}
+void MainWindow::PubRelocPose(const RobotPose &pose) {
+    double x = pose.x;
+    double y = pose.y;
+    double theta = pose.theta;
+
+    // 创建 JSON 对象
+    QJsonObject geo_pose;
+
+    // 设置 header
+    QJsonObject header;
+    header["frame_id"] = "map";
+
+    // 使用 std::chrono 获取的时间戳
+    auto now = std::chrono::steady_clock::now();
+    auto time_since_epoch = now.time_since_epoch();
+    auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(time_since_epoch).count();
+    header["stamp"] = QString::number(nanoseconds);
+
+    // 设置 position
+    QJsonObject position;
+    position["x"] = x;
+    position["y"] = y;
+    position["z"] = 0; // PoseWithCovarianceStamped 默认有 z 维度，通常设置为 0
+
+    // 使用 Eigen 计算四元数
+    Eigen::Quaterniond quaternion = Eigen::Quaterniond::Identity();
+    quaternion = Eigen::AngleAxisd(theta, Eigen::Vector3d::UnitZ()) * quaternion;
+
+    QJsonObject orientation;
+    orientation["x"] = quaternion.x();
+    orientation["y"] = quaternion.y();
+    orientation["z"] = quaternion.z();
+    orientation["w"] = quaternion.w();
+
+    // 设置协方差（PoseWithCovarianceStamped 默认包含协方差）
+    QJsonArray covariance;
+    for (int i = 0; i < 36; ++i) { // PoseWithCovarianceStamped 协方差矩阵是 6x6
+        covariance.append(0); // 这里初始化为 0，实际应用中需要填充实际协方差值
+    }
+    QJsonObject poseObject;
+    poseObject["position"] = position;
+    poseObject["orientation"] = orientation;
+    poseObject["covariance"] = covariance;
+
+    // 将各部分添加到 geo_pose 对象中
+    geo_pose["header"] = header;
+    geo_pose["pose"] = poseObject;
+
+    // 将 JSON 对象转换为 QString
+    QJsonObject rosbridge_msg;
+        rosbridge_msg["op"] = "publish";
+        rosbridge_msg["topic"] = "/initialpose"; // 替换为实际的 ROS 话题名
+        rosbridge_msg["msg"] = geo_pose;
+
+        // 将 JSON 对象转换为 QString
+        QJsonDocument doc(rosbridge_msg);
+        QString rosbridgeMessage = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+    // 发送消息
+    rosClient->sendmessage(rosbridgeMessage);
+}
+void MainWindow::submap(){
+    QString topic = "/map";
+    QString type = "nav_msgs/msg/OccupancyGrid";
+    mapclient->receive_map(topic, type);
+    connect(mapclient, &mapBridge::mapmessage, this, &MainWindow::show_map);
+}
+void MainWindow::show_map(QString message){
+    QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
+    QJsonObject jsonObj = doc.object()["msg"].toObject();
+        QJsonObject info = jsonObj["info"].toObject();
+        double origin_x = info["origin"].toObject()["position"].toObject()["x"].toDouble();
+        double origin_y = info["origin"].toObject()["position"].toObject()["y"].toDouble();
+        int width = info["width"].toInt();
+        int height = info["height"].toInt();
+        double resolution = info["resolution"].toDouble();
+        qDebug()<<width<<"          "<<height;
+        // 创建OccupancyMap对象
+        occ_map_ = basic::OccupancyMap(
+            height, width, Eigen::Vector3d(origin_x, origin_y, 0), resolution);
+        // 填充地图数据
+        QJsonArray data = jsonObj["data"].toArray();
+        for (int i = 0; i < data.size(); i++) {
+            int x = int(i / width);
+            int y = i % width;
+            occ_map_(x, y) = data[i].toInt();
+        }
+        // 设置地图方向并触发回调
+        occ_map_.SetFlip();
+        display_manager_->UpdateTopicData(MsgId::kOccupancyMap, occ_map_);//订阅激光往这里传
+}
+void MainWindow::sub_lidar(){
+    QString topic = "/scan";
+    QString type = "sensor_msgs/msg/LaserScan";
+    mapclient->reveive_lidar(topic, type);
+    connect(mapclient, &mapBridge::lidarmessage, this, &MainWindow::show_lidar);
+}
+void MainWindow::show_lidar(QString message) {
+    sensor->setpicture2();
+    QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
+    QJsonObject obj = doc.object();
+
+    // 从嵌套的 "msg" 对象中提取数据
+    QJsonObject msgObj = obj["msg"].toObject();
+
+    double angle_min = msgObj["angle_min"].toDouble();
+    double angle_max = msgObj["angle_max"].toDouble();
+    double angle_increment = msgObj["angle_increment"].toDouble();
+    QJsonArray rangesArray = msgObj["ranges"].toArray();
+
+    basic::LaserScan laser_points;
+    for (int i = 0; i < rangesArray.size(); ++i) {
+        double angle = angle_min + i * angle_increment;
+        double dist = rangesArray[i].toDouble();
+        if (std::isinf(dist)) continue;
+
+        double x = dist * std::cos(angle);
+        double y = dist * std::sin(angle);
+
+        basic::Point p;
+        p.x = x;
+        p.y = y;
+        laser_points.push_back(p);
+    }
+
+    laser_points.id = 0;
+    display_manager_->UpdateTopicData(MsgId::kLaserScan, laser_points);
+}
+void MainWindow::sub_GlobalCostMap(){
+    QString topic = "/global_costmap/costmap";
+    QString type = "nav_msgs/msg/OccupancyGrid";
+    mapclient->reveive_GlobalCostMap(topic, type);
+    connect(mapclient, &mapBridge::GlobalCostMapmessage, this, &MainWindow::show_GlobalCostMap);
+}
+void MainWindow::show_GlobalCostMap(QString message) {
+    // 解析 JSON 消息
+    QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
+    QJsonObject obj = doc.object();
+    // 从嵌套的 "msg" 对象中提取数据
+    QJsonObject msgObj = obj["msg"].toObject();
+    // 提取网格信息
+    QJsonObject infoObj = msgObj["info"].toObject();
+    int width = infoObj["width"].toInt();
+    int height = infoObj["height"].toInt();
+    double resolution = infoObj["resolution"].toDouble();
+    QJsonObject originObj = infoObj["origin"].toObject();
+    QJsonObject positionObj = originObj["position"].toObject();
+    double origin_x = positionObj["x"].toDouble();
+    double origin_y = positionObj["y"].toDouble();
+
+    // 初始化 OccupancyMap
+    basic::OccupancyMap cost_map(height, width,
+                                 Eigen::Vector3d(origin_x, origin_y, 0),
+                                 resolution);
+    QJsonArray dataArray = msgObj["data"].toArray();
+    for (int i = 0; i < dataArray.size(); ++i) {
+        int x = i / width;
+        int y = i % width;
+        cost_map(x, y) = dataArray[i].toInt();
+    }
+
+    cost_map.SetFlip();
+    display_manager_->UpdateTopicData(MsgId::kGlobalCostMap,cost_map);
+}
+void MainWindow::sub_RobotPose(){
+    QString topic = "/robot_pose";
+    QString type = "geometry_msgs/PoseStamped";
+    mapclient->reveive_Pose(topic, type);
+    connect(mapclient, &mapBridge::Posemessage, this, &MainWindow::show_pose);
+}
+double MainWindow::calculateYawFromQuaternion(double qx, double qy, double qz, double qw) {
+    // 使用公式将四元数转换为yaw角
+    double siny_cosp = 2 * (qw * qz + qx * qy);
+    double cosy_cosp = 1 - 2 * (qy * qy + qz * qz);
+    return std::atan2(siny_cosp, cosy_cosp);
+}
+void MainWindow::show_pose(QString message){
+    QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
+        QJsonObject obj = doc.object();
+
+        // 检查是否包含 "msg" 字段
+        if (obj.contains("msg")) {
+            QJsonObject msg = obj["msg"].toObject();
+
+            // 提取位姿中的位移信息 (x, y) 和四元数信息
+            double x = msg["pose"].toObject()["position"].toObject()["x"].toDouble();
+            double y = msg["pose"].toObject()["position"].toObject()["y"].toDouble();
+
+            QJsonObject orientation = msg["pose"].toObject()["orientation"].toObject();
+            double qx = orientation["x"].toDouble();
+            double qy = orientation["y"].toDouble();
+            double qz = orientation["z"].toDouble();
+            double qw = orientation["w"].toDouble();
+
+            // 将四元数转换为yaw角（假设机器人是在2D平面运动）
+            double yaw = calculateYawFromQuaternion(qx, qy, qz, qw);
+            basic::RobotPose ret;
+            ret.x=x;
+            ret.y=y;
+            ret.theta=yaw;
+            display_manager_->UpdateTopicData(MsgId::kRobotPose,ret);
     }
 }

@@ -13,7 +13,6 @@
 #include <any>
 #include <iostream>
 #include "msg/msg_info.h"
-
 #include "display_defines.h"
 #include "occupancy_map.h"
 #include "point_type.h"
@@ -130,8 +129,8 @@ class VirtualDisplay : public QObject, public QGraphicsItem {
   QPointF GetOriginPose() { return bounding_rect_.topLeft(); }
   QPointF GetOriginPoseScene() { return mapToScene(GetOriginPose()); }
   QPointF PoseToScene(QPointF pose) {  //将坐标转换为scene(以中心为原点)
-    return mapToScene((pose + GetOriginPose()));
-  }
+      return mapToScene((pose + GetOriginPose()));
+    }
   void CenterOnScene(QPointF pose);
   bool IsMoving() { return is_moving_; }
   void UpdatePose(const RobotPose &pose) { SetPoseInParent(pose); }
